@@ -4,98 +4,101 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.societe.data.Book;
 import com.societe.exception.BookNotFoundException;
 import com.societe.exception.InvalidBookDataException;
 import com.societe.service.BookService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/books")
+@Tag(name = "Book Management", description = "APIs for managing books")
 public class BookController {
 
 	private final BookService bookService;
 
-	// Instanciation du service
 	public BookController(BookService bookService) {
 		this.bookService = bookService;
 	}
 
-	// Liste de tous les livres
 	@GetMapping
+	@Operation(summary = "List all books", description = "Fetches all books available in the system.")
+	@ApiResponse(responseCode = "200", description = "Successfully retrieved list of books")
 	public ResponseEntity<List<Book>> getAllBooks() {
 		List<Book> books = bookService.getAllBooks();
-
 		if (books.isEmpty()) {
-			return ResponseEntity.noContent().build(); // 204 si la liste est vide
+			return ResponseEntity.noContent().build();
 		}
-
-		return ResponseEntity.ok(books); // 200 OK pour une liste réussie
+		return ResponseEntity.ok(books);
 	}
 
-	// Obtenir un livre par ID
 	@GetMapping("/{id}")
+	@Operation(summary = "Get a book by ID", description = "Fetches a single book using its ID.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "Book found"),
+		@ApiResponse(responseCode = "404", description = "Book not found")
+	})
 	public ResponseEntity<Book> getBookById(@PathVariable Long id) {
 		try {
-			// Utilise le service pour récupérer le livre
 			Book book = bookService.getBookById(id);
-			return ResponseEntity.ok(book); // Retourne le livre avec un statut 200
+			return ResponseEntity.ok(book);
 		} catch (BookNotFoundException ex) {
-			// Si le livre n'est pas trouvé, retourne un statut 404
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 	}
 
-	// Ajouter un livre
 	@PostMapping
+	@Operation(summary = "Add a new book", description = "Creates a new book record.")
+	@ApiResponse(responseCode = "201", description = "Book successfully created")
 	public ResponseEntity<?> addBook(@RequestBody Book book) {
 		try {
-			// Vérification d'existence (ID déjà fourni)
 			if (book.getIdBook() != null && bookService.existsById(book.getIdBook())) {
 				return ResponseEntity.status(HttpStatus.CONFLICT)
 						.body("Book with ID " + book.getIdBook() + " already exists.");
 			}
-
-			// Sauvegarde du livre
 			Book savedBook = bookService.addBook(book);
-			return ResponseEntity.status(HttpStatus.CREATED).body(savedBook); // 201 Created
+			return ResponseEntity.status(HttpStatus.CREATED).body(savedBook);
 		} catch (InvalidBookDataException ex) {
-			// Erreur de données invalides
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
 		} catch (Exception ex) {
-			// Autres erreurs
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body("An error occurred: " + ex.getMessage());
 		}
 	}
 
-	// Modifier un livre
 	@PutMapping("/{id}")
+	@Operation(summary = "Update a book", description = "Updates an existing book's information.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "Book updated successfully"),
+		@ApiResponse(responseCode = "404", description = "Book not found")
+	})
 	public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody Book book) {
 		try {
 			Book updatedBook = bookService.updateBook(id, book);
-			return ResponseEntity.ok(updatedBook); // 200 OK pour la mise à jour
+			return ResponseEntity.ok(updatedBook);
 		} catch (BookNotFoundException e) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // 404 si livre non trouvé
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		}
 	}
 
-	// Supprimer un livre
 	@DeleteMapping("/{id}")
+	@Operation(summary = "Delete a book", description = "Removes a book by its ID.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "204", description = "Book deleted successfully"),
+		@ApiResponse(responseCode = "404", description = "Book not found")
+	})
 	public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
 		try {
 			bookService.deleteBook(id);
-			return ResponseEntity.noContent().build(); // 204 si suppression réussie
+			return ResponseEntity.noContent().build();
 		} catch (BookNotFoundException e) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // 404 si livre non trouvé
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		}
 	}
 }

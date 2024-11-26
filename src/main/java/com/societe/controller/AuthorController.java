@@ -17,8 +17,14 @@ import com.societe.data.Author;
 import com.societe.exception.AuthorNotFoundException;
 import com.societe.service.AuthorService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/authors")
+@Tag(name = "Author Management", description = "APIs for managing authors")
 public class AuthorController {
 
 	private final AuthorService authorService;
@@ -27,47 +33,58 @@ public class AuthorController {
 		this.authorService = authorService;
 	}
 
-	// Obtenir tous les auteurs
 	@GetMapping
+	@Operation(summary = "List all authors", description = "Fetches all authors available in the system.")
+	@ApiResponse(responseCode = "200", description = "Successfully retrieved list of authors")
 	public ResponseEntity<List<Author>> getAllAuthors() {
 		List<Author> authors = authorService.getAllAuthors();
 		return ResponseEntity.ok(authors);
 	}
 
-	// Obtenir un auteur par ID
 	@GetMapping("/{id}")
+	@Operation(summary = "Get an author by ID", description = "Fetches a single author using its ID.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "Author found"),
+		@ApiResponse(responseCode = "404", description = "Author not found")
+	})
 	public ResponseEntity<Author> getAuthorById(@PathVariable Long id) {
 		try {
-			// Utilise le service pour récupérer l'auteur
 			Author author = authorService.getAuthorById(id);
-			return ResponseEntity.ok(author); // Retourne l'auteur avec un statut 200
+			return ResponseEntity.ok(author);
 		} catch (AuthorNotFoundException ex) {
-			// Si l'auteur n'est pas trouvé, retourne un statut 404
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 	}
 
-	// Créer un nouvel auteur
 	@PostMapping
+	@Operation(summary = "Add a new author", description = "Creates a new author record.")
+	@ApiResponse(responseCode = "201", description = "Author successfully created")
 	public ResponseEntity<Author> createAuthor(@RequestBody Author author) {
 		Author createdAuthor = authorService.createAuthor(author);
 		return ResponseEntity.status(HttpStatus.CREATED).body(createdAuthor);
 	}
 
 	@PutMapping("/{id}")
+	@Operation(summary = "Update an author", description = "Updates an existing author's information.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "Author updated successfully"),
+		@ApiResponse(responseCode = "404", description = "Author not found")
+	})
 	public ResponseEntity<Author> updateAuthor(@PathVariable Long id, @RequestBody Author updatedAuthor) {
 		try {
-			// Appelle le service pour mettre à jour l'auteur
 			Author updated = authorService.updateAuthor(id, updatedAuthor);
-			return ResponseEntity.ok(updated); // Retourne l'auteur mis à jour avec un statut 200
+			return ResponseEntity.ok(updated);
 		} catch (AuthorNotFoundException e) {
-			// Si l'auteur n'est pas trouvé, retourne un statut 404
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 	}
 
-	// Supprimer un auteur
 	@DeleteMapping("/{id}")
+	@Operation(summary = "Delete an author", description = "Removes an author by its ID.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "204", description = "Author deleted successfully"),
+		@ApiResponse(responseCode = "404", description = "Author not found")
+	})
 	public ResponseEntity<Void> deleteAuthor(@PathVariable Long id) {
 		boolean deleted = authorService.deleteAuthor(id);
 		if (deleted) {
@@ -76,10 +93,4 @@ public class AuthorController {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		}
 	}
-
-	@Override
-	public String toString() {
-		return "AuthorController [authorService=" + authorService + "]";
-	}
-
 }

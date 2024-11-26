@@ -17,68 +17,83 @@ import com.societe.data.Category;
 import com.societe.exception.CategoryNotFoundException;
 import com.societe.service.CategoryService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/categories")
+@Tag(name = "Category Management", description = "APIs for managing categories")
 public class CategoryController {
 
-    private final CategoryService cs;
+	private final CategoryService cs;
 
-    // Instanciation du service
-    public CategoryController(CategoryService cs) {
-        this.cs = cs;
-    }
+	public CategoryController(CategoryService cs) {
+		this.cs = cs;
+	}
 
-    // Liste de toutes les catégories
-    @GetMapping
-    public ResponseEntity<List<Category>> getAllCategories() {
-        List<Category> categories = cs.getAllCategorys();
+	@GetMapping
+	@Operation(summary = "List all categories", description = "Fetches all categories available in the system.")
+	@ApiResponse(responseCode = "200", description = "Successfully retrieved list of categories")
+	public ResponseEntity<List<Category>> getAllCategories() {
+		List<Category> categories = cs.getAllCategorys();
+		if (categories.isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		}
+		return new ResponseEntity<>(categories, HttpStatus.OK);
+	}
 
-        if (categories.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204 si la liste est vide
-        }
+	@GetMapping("/{id}")
+	@Operation(summary = "Get a category by ID", description = "Fetches a single category using its ID.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "Category found"),
+		@ApiResponse(responseCode = "404", description = "Category not found")
+	})
+	public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
+		try {
+			Category category = cs.getCategoryById(id);
+			return ResponseEntity.ok(category);
+		} catch (CategoryNotFoundException ex) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		}
+	}
 
-        return new ResponseEntity<>(categories, HttpStatus.OK); // 200 OK pour une liste réussie
-    }
+	@PostMapping
+	@Operation(summary = "Add a new category", description = "Creates a new category.")
+	@ApiResponse(responseCode = "201", description = "Category successfully created")
+	public ResponseEntity<Category> addCategory(@RequestBody Category c) {
+		Category createdCategory = cs.addCategory(c);
+		return new ResponseEntity<>(createdCategory, HttpStatus.CREATED);
+	}
 
-    // Obtenir une catégorie par ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
-        try {
-            // Utilise le service pour récupérer la catégorie
-            Category category = cs.getCategoryById(id);
-            return ResponseEntity.ok(category); // Retourne la catégorie avec un statut 200
-        } catch (CategoryNotFoundException ex) {
-            // Si la catégorie n'est pas trouvée, retourne un statut 404
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
+	@PutMapping("/{id}")
+	@Operation(summary = "Update a category", description = "Updates an existing category.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "Category updated successfully"),
+		@ApiResponse(responseCode = "404", description = "Category not found")
+	})
+	public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody Category category) {
+		try {
+			Category updatedCategory = cs.updateCategory(id, category);
+			return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
+		} catch (CategoryNotFoundException e) {
+			return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+		}
+	}
 
-    // Ajouter une catégorie
-    @PostMapping
-    public ResponseEntity<Category> addCategory(@RequestBody Category c) {
-        Category createdCategory = cs.addCategory(c);
-        return new ResponseEntity<>(createdCategory, HttpStatus.CREATED); // 201 pour la création
-    }
-
-    // Modifier une catégorie
-    @PutMapping("/{id}")
-    public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody Category category) {
-        try {
-            Category updatedCategory = cs.updateCategory(id, category);
-            return new ResponseEntity<>(updatedCategory, HttpStatus.OK); // 200 OK pour la mise à jour
-        } catch (CategoryNotFoundException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND); // 404 si catégorie non trouvée
-        }
-    }
-
-    // Supprimer une catégorie
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        try {
-            cs.deleteCategory(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204 si suppression réussie
-        } catch (CategoryNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 404 si catégorie non trouvée
-        }
-    }
+	@DeleteMapping("/{id}")
+	@Operation(summary = "Delete a category", description = "Removes a category by its ID.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "204", description = "Category deleted successfully"),
+		@ApiResponse(responseCode = "404", description = "Category not found")
+	})
+	public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+		try {
+			cs.deleteCategory(id);
+			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+		} catch (CategoryNotFoundException e) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
 }
