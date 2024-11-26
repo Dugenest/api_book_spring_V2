@@ -40,6 +40,19 @@ public class CategoryController {
         return new ResponseEntity<>(categories, HttpStatus.OK); // 200 OK pour une liste réussie
     }
 
+    // Obtenir une catégorie par ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
+        try {
+            // Utilise le service pour récupérer la catégorie
+            Category category = cs.getCategoryById(id);
+            return ResponseEntity.ok(category); // Retourne la catégorie avec un statut 200
+        } catch (CategoryNotFoundException ex) {
+            // Si la catégorie n'est pas trouvée, retourne un statut 404
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
     // Ajouter une catégorie
     @PostMapping
     public ResponseEntity<Category> addCategory(@RequestBody Category c) {
